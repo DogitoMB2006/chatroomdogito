@@ -1,4 +1,4 @@
-// src/pages/register/register.jsx
+
 import React, { useState } from 'react';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth, db } from '../../firebase';
