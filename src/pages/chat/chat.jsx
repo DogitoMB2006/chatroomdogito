@@ -17,6 +17,9 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import './chat.css';
 import SettingsIcon from '@material-ui/icons/Settings';
 import Modal from 'react-modal';
+import MicIcon from '@material-ui/icons/Mic';
+import StopIcon from '@material-ui/icons/Stop';
+import SendIcon from '@material-ui/icons/Send';
 
 Modal.setAppElement('#root');
 
@@ -29,7 +32,11 @@ const Chat = () => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [backgroundImage, setBackgroundImage] = useState(null);
   const [newBackgroundImage, setNewBackgroundImage] = useState(null);
+  const [recording, setRecording] = useState(false);
+  const [audioURL, setAudioURL] = useState('');
   const messagesEndRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
   useEffect(() => {
     if (user && friendUid) {
@@ -167,7 +174,66 @@ const Chat = () => {
       alert('Failed to update background image. Please try again later.');
     }
   };
-  
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        setAudioURL(audioUrl);
+        audioChunksRef.current = [];
+      };
+      mediaRecorder.start();
+      setRecording(true);
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      alert('Failed to start recording. Please try again.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      setRecording(false);
+    }
+  };
+
+  const sendAudioMessage = async () => {
+    if (!audioURL) return;
+
+    try {
+      const response = await fetch(audioURL);
+      const audioBlob = await response.blob();
+      const uniqueName = `${Date.now()}.wav`;
+      const fileRef = ref(storage, `audio-messages/${uniqueName}`);
+      await uploadBytes(fileRef, audioBlob);
+      const audioUrl = await getDownloadURL(fileRef);
+
+      const chatId =
+        user.uid < friendUid ? `${user.uid}_${friendUid}` : `${friendUid}_${user.uid}`;
+
+      await addDoc(collection(db, 'chats'), {
+        chatId: chatId,
+        users: [user.uid, friendUid],
+        sender: user.uid,
+        audioUrl: audioUrl,
+        timestamp: new Date(),
+      });
+
+      setAudioURL('');
+    } catch (error) {
+      console.error('Error sending audio message:', error);
+      alert('Failed to send audio message. Please try again later.');
+    }
+  };
 
   if (loading) {
     return <div>Loading...</div>;
@@ -191,7 +257,8 @@ const Chat = () => {
             key={msg.id}
             className={`message ${msg.sender === user.uid ? 'sent' : 'received'}`}
           >
-            <p>{msg.message}</p>
+            {msg.message && <p>{msg.message}</p>}
+            {msg.audioUrl && <audio controls src={msg.audioUrl}></audio>}
             <span>{new Date(msg.timestamp?.toDate()).toLocaleString()}</span>
           </div>
         ))}
@@ -206,6 +273,22 @@ const Chat = () => {
         />
         <button type="submit">Send</button>
       </form>
+      <div className="audio-controls">
+        {recording ? (
+          <button onClick={stopRecording}>
+            <StopIcon />
+          </button>
+        ) : (
+          <button onClick={startRecording}>
+            <MicIcon />
+          </button>
+        )}
+        {audioURL && !recording && (
+          <button onClick={sendAudioMessage}>
+            <SendIcon />
+          </button>
+        )}
+      </div>
 
       <Modal
         isOpen={modalIsOpen}
