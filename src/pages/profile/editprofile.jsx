@@ -1,4 +1,3 @@
-// src/pages/profile/editprofile.jsx
 
 import React from 'react';
 import EditProfile from '../../components/EditProfile';
