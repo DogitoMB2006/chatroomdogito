@@ -1,4 +1,4 @@
-// src/firebase.js
+
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
@@ -14,7 +14,7 @@ const firebaseConfig = {
   measurementId: "G-QP66H024GT"
 };
 
-// Initialize Firebase
+
 const app = initializeApp(firebaseConfig);
 
 const auth = getAuth(app);
