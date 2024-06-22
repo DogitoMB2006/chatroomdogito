@@ -1,4 +1,4 @@
-/* Reset some basic styles */
+
 * {
     margin: 0;
     padding: 0;
@@ -6,7 +6,7 @@
     font-family: 'Arial', sans-serif;
   }
   
-  /* Container for the entire chat */
+  
   .chat-container {
     display: flex;
     flex-direction: column;
@@ -20,7 +20,7 @@
     background-color: #f9f9f9;
   }
   
-  /* Header style */
+
   .chat-header {
     padding: 1rem;
     background-color: #007bff;
@@ -31,7 +31,7 @@
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   }
   
-  /* Container for the messages */
+
   .messages-container {
     flex: 1;
     padding: 1rem;
@@ -40,7 +40,7 @@
     flex-direction: column;
   }
   
-  /* Styles for individual messages */
+
   .message {
     max-width: 70%;
     margin-bottom: 1rem;
@@ -50,7 +50,7 @@
     animation: fadeIn 0.5s ease-in-out;
   }
   
-  /* Different colors for sent and received messages */
+
   .message.sent {
     align-self: flex-end;
     background-color: #dcf8c6;
@@ -62,7 +62,7 @@
     border: 1px solid #ddd;
   }
   
-  /* Timestamp style */
+
   .message span {
     display: block;
     font-size: 0.75rem;
@@ -70,7 +70,7 @@
     margin-top: 0.5rem;
   }
   
-  /* Input area styles */
+
   .message-input {
     display: flex;
     padding: 0.75rem;
@@ -106,7 +106,7 @@
     background-color: #0056b3;
   }
   
-  /* Animation for message fade-in */
+
   @keyframes fadeIn {
     from {
       opacity: 0;
