@@ -1,7 +1,7 @@
-// src/pages/login/login.jsx
+
 import React, { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../../firebase'; // Actualiza la ruta de importación
+import { auth } from '../../firebase'; 
 import { useNavigate } from 'react-router-dom';
 import './login.css';
 
@@ -15,7 +15,7 @@ const Login = () => {
     event.preventDefault();
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigate('/home'); // Redirect to home page after successful login
+      navigate('/home');
     } catch (error) {
       setError(error.message);
     }
