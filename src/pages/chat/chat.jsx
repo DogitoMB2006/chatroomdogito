@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { auth, db } from '../../firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -20,6 +20,7 @@ const Chat = () => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [friendName, setFriendName] = useState('');
+  const messagesEndRef = useRef(null);
 
   useEffect(() => {
     if (user && friendUid) {
@@ -58,6 +59,16 @@ const Chat = () => {
       return () => unsubscribe();
     }
   }, [user, friendUid]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -108,6 +119,7 @@ const Chat = () => {
             <span>{new Date(msg.timestamp?.toDate()).toLocaleString()}</span>
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
       <form onSubmit={handleSendMessage} className="message-input">
         <input
