@@ -1,8 +1,6 @@
-// chat.jsx
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { auth, db, storage } from '../../firebase'; // Adjust the path according to your file structure
+import { auth, db, storage } from '../../firebase'; // Ajusta la ruta según tu estructura de archivos
 import { useAuthState } from 'react-firebase-hooks/auth';
 import {
   collection,
@@ -180,7 +178,7 @@ const Chat = () => {
   }
 
   return (
-    <div className="chat-container" style={{ backgroundImage: `url(${backgroundImage})` }}>
+    <div className="chat-container" style={{ backgroundImage: `url(${backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
       <div className="chat-header">
         <h2>Chat with {friendName}</h2>
         <button className="settings-button" onClick={openModal}>
