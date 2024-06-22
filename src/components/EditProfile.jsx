@@ -1,4 +1,4 @@
-// src/components/EditProfile.jsx
+
 
 import React, { useState } from 'react';
 import { auth, db, storage } from '../firebase';
