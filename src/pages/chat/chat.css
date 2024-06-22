@@ -65,6 +65,19 @@
   margin-top: 0.5rem;
 }
 
+.voice-message {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
+  background-color: #f1f0f0;
+  border-radius: 10px;
+  margin-top: 0.5rem;
+}
+
+.voice-message audio {
+  width: 100%;
+}
+
 .message-input {
   display: flex;
   padding: 0.75rem;

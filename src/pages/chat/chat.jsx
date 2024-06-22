@@ -9,7 +9,7 @@ import {
   addDoc,
   onSnapshot,
   orderBy,
-  doc,
+  doc, 
   getDoc,
   updateDoc,
 } from 'firebase/firestore';
@@ -258,7 +258,11 @@ const Chat = () => {
             className={`message ${msg.sender === user.uid ? 'sent' : 'received'}`}
           >
             {msg.message && <p>{msg.message}</p>}
-            {msg.audioUrl && <audio controls src={msg.audioUrl}></audio>}
+            {msg.audioUrl && (
+              <div className="voice-message">
+                <audio controls src={msg.audioUrl}></audio>
+              </div>
+            )}
             <span>{new Date(msg.timestamp?.toDate()).toLocaleString()}</span>
           </div>
         ))}
