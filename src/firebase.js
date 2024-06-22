@@ -1,3 +1,4 @@
+// firebase.js
 
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
@@ -14,13 +15,9 @@ const firebaseConfig = {
   measurementId: "G-QP66H024GT"
 };
 
-
 const app = initializeApp(firebaseConfig);
-
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-export { auth, db, storage };
-
-
+export { app, auth, db, storage };
