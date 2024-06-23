@@ -20,7 +20,8 @@ import Modal from 'react-modal';
 import MicIcon from '@material-ui/icons/Mic';
 import StopIcon from '@material-ui/icons/Stop';
 import SendIcon from '@material-ui/icons/Send';
-import GalleryIcon from '@material-ui/icons/PhotoLibrary'; // Nuevo icono para la galería
+import GalleryIcon from '@material-ui/icons/PhotoLibrary';
+import CancelIcon from '@material-ui/icons/Cancel'; // Nuevo icono para cancelar
 
 Modal.setAppElement('#root');
 
@@ -35,7 +36,7 @@ const Chat = () => {
   const [newBackgroundImage, setNewBackgroundImage] = useState(null);
   const [recording, setRecording] = useState(false);
   const [audioURL, setAudioURL] = useState('');
-  const [selectedImage, setSelectedImage] = useState(null); // Estado para la imagen seleccionada
+  const [selectedImage, setSelectedImage] = useState(null);
   const messagesEndRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -185,28 +186,10 @@ const Chat = () => {
           audioChunksRef.current.push(event.data);
         }
       };
-      mediaRecorder.onstop = async () => {
+      mediaRecorder.onstop = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
         const audioUrl = URL.createObjectURL(audioBlob);
         setAudioURL(audioUrl);
-
-        // Upload the audio blob immediately after stopping the recording
-        const uniqueName = `${Date.now()}.wav`;
-        const fileRef = ref(storage, `audio-messages/${uniqueName}`);
-        await uploadBytes(fileRef, audioBlob);
-        const uploadedAudioUrl = await getDownloadURL(fileRef);
-
-        const chatId =
-          user.uid < friendUid ? `${user.uid}_${friendUid}` : `${friendUid}_${user.uid}`;
-
-        await addDoc(collection(db, 'chats'), {
-          chatId: chatId,
-          users: [user.uid, friendUid],
-          sender: user.uid,
-          audioUrl: uploadedAudioUrl,
-          timestamp: new Date(),
-        });
-
         audioChunksRef.current = [];
       };
       mediaRecorder.start();
@@ -253,6 +236,12 @@ const Chat = () => {
     }
   };
 
+  const cancelAudioMessage = () => {
+    setAudioURL('');
+    audioChunksRef.current = [];
+    setRecording(false);
+  };
+
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -269,7 +258,7 @@ const Chat = () => {
       await addDoc(collection(db, 'chats'), {
         chatId: chatId,
         users: [user.uid, friendUid],
-        sender          : user.uid,
+        sender: user.uid,
         imageUrl: imageUrl,
         timestamp: new Date(),
       });
@@ -354,9 +343,14 @@ const Chat = () => {
           </button>
         )}
         {audioURL && !recording && (
-          <button onClick={sendAudioMessage}>
-            <SendIcon />
-          </button>
+          <>
+            <button onClick={sendAudioMessage}>
+              <SendIcon />
+            </button>
+            <button onClick={cancelAudioMessage}>
+              <CancelIcon />
+            </button>
+          </>
         )}
       </div>
 
