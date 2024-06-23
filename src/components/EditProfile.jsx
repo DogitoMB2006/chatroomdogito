@@ -1,6 +1,5 @@
-
-
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // Importar useNavigate en lugar de useHistory
 import { auth, db, storage } from '../firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -11,6 +10,7 @@ const EditProfile = () => {
   const [username, setUsername] = useState('');
   const [profilePic, setProfilePic] = useState(null);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate(); // Usar useNavigate para la navegación
 
   const handleUsernameChange = (e) => {
     setUsername(e.target.value);
@@ -38,7 +38,7 @@ const EditProfile = () => {
 
         await updateDoc(userDocRef, updates);
         alert('Profile updated successfully!');
-        window.location.reload();
+        navigate('/home'); // Usar navigate para redirigir al usuario a /home
       } catch (error) {
         console.error('Error updating profile:', error);
         alert('Failed to update profile. Please try again later.');

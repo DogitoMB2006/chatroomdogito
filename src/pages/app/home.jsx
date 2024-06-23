@@ -14,8 +14,9 @@ import {
   getDoc,
   deleteDoc
 } from 'firebase/firestore';
-import { FaUserPlus, FaEnvelope, FaCheck, FaTimes, FaEdit } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import { FaUserPlus, FaEnvelope, FaCheck, FaTimes, FaEdit, FaSignOutAlt } from 'react-icons/fa';
+import Snackbar from '@mui/material/Snackbar';
+import Grow from '@mui/material/Grow';
 import './home.css';
 
 const Home = () => {
@@ -25,10 +26,25 @@ const Home = () => {
   const [friendUsername, setFriendUsername] = useState('');
   const [friendRequests, setFriendRequests] = useState([]);
   const [showRequests, setShowRequests] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [lastLoaded, setLastLoaded] = useState(new Date());
   const navigate = useNavigate();
+  const [displayName, setDisplayName] = useState(user?.displayName || user?.email); // Estado local para el nombre de usuario
 
   useEffect(() => {
     if (user) {
+      // Función para actualizar el nombre de usuario en la página de inicio
+      const updateUserDisplayName = async () => {
+        const userRef = doc(db, 'users', user.uid);
+        const userSnapshot = await getDoc(userRef);
+        if (userSnapshot.exists()) {
+          const userData = userSnapshot.data();
+          setDisplayName(userData.username || user.displayName || user.email);
+        }
+      };
+
+      updateUserDisplayName(); // Llamar a la función al cargar el componente inicialmente
+
       const reqQuery = query(collection(db, 'friendRequests'), where('to', '==', user.uid));
       const unsubscribeRequests = onSnapshot(reqQuery, (querySnapshot) => {
         const requests = [];
@@ -52,12 +68,48 @@ const Home = () => {
         }
       });
 
+      const chatQuery = query(
+        collection(db, 'chats'),
+        where('users', 'array-contains', user.uid)
+      );
+
+      const unsubscribeMessages = onSnapshot(chatQuery, (querySnapshot) => {
+        querySnapshot.docChanges().forEach((change) => {
+          if (change.type === 'added') {
+            const messageData = change.doc.data();
+            if (messageData.timestamp && messageData.timestamp.toDate() > lastLoaded) {
+              if (messageData.sender !== user.uid) {
+                const isRelevant = messageData.users.includes(user.uid);
+                if (isRelevant) {
+                  const senderDoc = doc(db, 'users', messageData.sender);
+                  getDoc(senderDoc).then((docSnapshot) => {
+                    if (docSnapshot.exists()) {
+                      const senderData = docSnapshot.data();
+                      const senderName = senderData.username || messageData.sender;
+                      setNotifications((prevNotifications) => [
+                        ...prevNotifications,
+                        { 
+                          id: change.doc.id, 
+                          message: `${senderName} sent you a message: ${messageData.message || 'Check your DM\'s'}`, 
+                          senderId: messageData.sender 
+                        }
+                      ]);
+                    }
+                  });
+                }
+              }
+            }
+          }
+        });
+      });
+
       return () => {
         unsubscribeRequests();
         unsubscribeUser();
+        unsubscribeMessages();
       };
     }
-  }, [user]);
+  }, [user, lastLoaded]);
 
   const handleAddFriend = async () => {
     console.log('Attempting to add friend with username:', friendUsername);
@@ -136,6 +188,18 @@ const Home = () => {
     auth.signOut().then(() => navigate('/'));
   };
 
+  const handleNotificationClose = (id) => {
+    setNotifications(notifications.filter((notification) => notification.id !== id));
+  };
+
+  const handleNotificationClick = (senderId) => {
+    navigate(`/chat/${senderId}`);
+  };
+
+  const handleFriendClick = (friendUid) => {
+    navigate(`/chat/${friendUid}`);
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -148,13 +212,13 @@ const Home = () => {
   return (
     <div className="home-container">
       <div className="home-header">
-        <h2>Welcome, {user.displayName || user.email}</h2>
+        <h2>Welcome, {displayName}</h2> {/* Mostrar displayName actualizado dinámicamente */}
         <div className="icons">
           <FaUserPlus onClick={() => setShowAddFriend(!showAddFriend)} />
           <FaEnvelope onClick={() => setShowRequests(!showRequests)} />
           <FaEdit onClick={() => navigate('/profile/edit')} />
+          <FaSignOutAlt onClick={handleSignOut} />
         </div>
-        <button onClick={handleSignOut}>Sign Out</button>
       </div>
 
       {showAddFriend && (
@@ -175,18 +239,12 @@ const Home = () => {
           {friendRequests.length === 0 ? (
             <p>No friend requests.</p>
           ) : (
-            friendRequests.map((request, index) => (
-              <div key={index} className="friend-request">
-                <p>{request.fromUsername} wants to be friends</p>
-                <div className="friend-request-buttons">
-                  <FaCheck
-                    className="accept-button"
-                    onClick={() => handleAcceptRequest(request)}
-                  />
-                  <FaTimes
-                    className="reject-button"
-                    onClick={() => handleRejectRequest(request)}
-                  />
+            friendRequests.map((request) => (
+              <div key={request.id} className="friend-request">
+                <p>{request.fromUsername} wants to be your friend.</p>
+                <div className="friend-request-actions">
+                  <FaCheck onClick={() => handleAcceptRequest(request)} />
+                  <FaTimes onClick={() =>                   handleRejectRequest(request)} />
                 </div>
               </div>
             ))
@@ -194,23 +252,41 @@ const Home = () => {
         </div>
       )}
 
-      <div className="friends-list">
-        <h3>Your Friends</h3>
+      <div className="friend-list">
+        <h3>Friends</h3>
         {friends.length === 0 ? (
-          <p>No friends yet.</p>
+          <p>You have no friends added.</p>
         ) : (
-          friends.map((friend, index) => (
-            <div key={index} className="friend">
-              <Link to={`/chat/${friend.uid}`}>
-                <img src={friend.profilePic} alt={`${friend.username}'s profile`} />
-                <p>{friend.username}</p>
-              </Link>
+          friends.map((friend) => (
+            <div key={friend.uid} className="friend" onClick={() => handleFriendClick(friend.uid)}>
+              <img src={friend.profilePic} alt={`${friend.username}'s profile`} />
+              <p>{friend.username}</p>
             </div>
           ))
         )}
       </div>
+
+      {notifications.map((notification) => (
+        <Snackbar
+          key={notification.id}
+          open={true}
+          onClose={() => handleNotificationClose(notification.id)}
+          TransitionComponent={Grow}
+          autoHideDuration={4000}
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        >
+          <div
+            className="notification-content"
+            onClick={() => handleNotificationClick(notification.senderId)}
+            style={{ cursor: 'pointer' }}
+          >
+            {notification.message}
+          </div>
+        </Snackbar>
+      ))}
     </div>
   );
 };
 
 export default Home;
+

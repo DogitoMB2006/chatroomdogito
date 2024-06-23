@@ -1,0 +1,23 @@
+.notification {
+  background-color: white;
+  color: black;
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 5px;
+  cursor: pointer; /* Hace que toda la notificación sea clicable */
+}
+
+.notification p {
+  margin: 0;
+}
+
+.notification button {
+  background-color: transparent;
+  border: none;
+  color: red;
+  cursor: pointer;
+}

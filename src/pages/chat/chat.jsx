@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { auth, db, storage } from '../../firebase'; // Ajusta la ruta según tu estructura de archivos
+import { auth, db, storage } from '../../firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import {
   collection,
@@ -9,7 +9,7 @@ import {
   addDoc,
   onSnapshot,
   orderBy,
-  doc, 
+  doc,
   getDoc,
   updateDoc,
 } from 'firebase/firestore';
@@ -20,6 +20,7 @@ import Modal from 'react-modal';
 import MicIcon from '@material-ui/icons/Mic';
 import StopIcon from '@material-ui/icons/Stop';
 import SendIcon from '@material-ui/icons/Send';
+import GalleryIcon from '@material-ui/icons/PhotoLibrary'; // Nuevo icono para la galería
 
 Modal.setAppElement('#root');
 
@@ -34,6 +35,7 @@ const Chat = () => {
   const [newBackgroundImage, setNewBackgroundImage] = useState(null);
   const [recording, setRecording] = useState(false);
   const [audioURL, setAudioURL] = useState('');
+  const [selectedImage, setSelectedImage] = useState(null); // Estado para la imagen seleccionada
   const messagesEndRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -145,9 +147,8 @@ const Chat = () => {
   const changeBackground = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-  
+
     try {
-      // Genera un nombre de archivo único usando el timestamp y el nombre original del archivo.
       const uniqueName = `${Date.now()}_${file.name}`;
       const fileRef = ref(storage, `chat-backgrounds/${uniqueName}`);
       const uploadResult = await uploadBytes(fileRef, file);
@@ -158,17 +159,16 @@ const Chat = () => {
       alert('Failed to upload file. Please try again.');
     }
   };
-  
+
   const saveChanges = async () => {
     if (!newBackgroundImage) return;
-  
+
     try {
       const userRef = doc(db, 'users', user.uid);
       await updateDoc(userRef, { backgroundImage: newBackgroundImage });
       setBackgroundImage(newBackgroundImage);
       setNewBackgroundImage(null);
       closeModal();
-      // No need to reload the whole window, React will update the component
     } catch (error) {
       console.error('Error updating background image:', error);
       alert('Failed to update background image. Please try again later.');
@@ -185,10 +185,28 @@ const Chat = () => {
           audioChunksRef.current.push(event.data);
         }
       };
-      mediaRecorder.onstop = () => {
+      mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
         const audioUrl = URL.createObjectURL(audioBlob);
         setAudioURL(audioUrl);
+
+        // Upload the audio blob immediately after stopping the recording
+        const uniqueName = `${Date.now()}.wav`;
+        const fileRef = ref(storage, `audio-messages/${uniqueName}`);
+        await uploadBytes(fileRef, audioBlob);
+        const uploadedAudioUrl = await getDownloadURL(fileRef);
+
+        const chatId =
+          user.uid < friendUid ? `${user.uid}_${friendUid}` : `${friendUid}_${user.uid}`;
+
+        await addDoc(collection(db, 'chats'), {
+          chatId: chatId,
+          users: [user.uid, friendUid],
+          sender: user.uid,
+          audioUrl: uploadedAudioUrl,
+          timestamp: new Date(),
+        });
+
         audioChunksRef.current = [];
       };
       mediaRecorder.start();
@@ -235,6 +253,36 @@ const Chat = () => {
     }
   };
 
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      const uniqueName = `${Date.now()}_${file.name}`;
+      const fileRef = ref(storage, `chat-images/${uniqueName}`);
+      await uploadBytes(fileRef, file);
+      const imageUrl = await getDownloadURL(fileRef);
+
+      const chatId =
+        user.uid < friendUid ? `${user.uid}_${friendUid}` : `${friendUid}_${user.uid}`;
+
+      await addDoc(collection(db, 'chats'), {
+        chatId: chatId,
+        users: [user.uid, friendUid],
+        sender          : user.uid,
+        imageUrl: imageUrl,
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Failed to upload image. Please try again later.');
+    }
+  };
+
+  const handleImageClick = (imageUrl) => {
+    setSelectedImage(imageUrl);
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -244,7 +292,7 @@ const Chat = () => {
   }
 
   return (
-    <div className="chat-container" style={{ backgroundImage: `url(${backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+    <div className="chat-container" style={{ backgroundImage: `url(${backgroundImage})` }}>
       <div className="chat-header">
         <h2>Chat with {friendName}</h2>
         <button className="settings-button" onClick={openModal}>
@@ -263,6 +311,14 @@ const Chat = () => {
                 <audio controls src={msg.audioUrl}></audio>
               </div>
             )}
+            {msg.imageUrl && (
+              <div
+                className="image-message"
+                onClick={() => handleImageClick(msg.imageUrl)}
+              >
+                <img src={msg.imageUrl} alt="Sent by user" className="message-image" />
+              </div>
+            )}
             <span>{new Date(msg.timestamp?.toDate()).toLocaleString()}</span>
           </div>
         ))}
@@ -275,6 +331,16 @@ const Chat = () => {
           value={message}
           onChange={handleChangeMessage}
         />
+        <label htmlFor="image-upload">
+          <input
+            type="file"
+            id="image-upload"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={handleImageUpload}
+          />
+          <GalleryIcon className="gallery-icon" />
+        </label>
         <button type="submit">Send</button>
       </form>
       <div className="audio-controls">
@@ -306,8 +372,15 @@ const Chat = () => {
         <button onClick={saveChanges}>Save Changes</button>
         <button className="close-button" onClick={closeModal}>Close</button>
       </Modal>
+
+      {selectedImage && (
+        <div className="expanded-image-overlay" onClick={() => setSelectedImage(null)}>
+          <img src={selectedImage} alt="Expanded" />
+        </div>
+      )}
     </div>
   );
 };
 
 export default Chat;
+
