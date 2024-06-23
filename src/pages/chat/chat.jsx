@@ -187,7 +187,7 @@ const Chat = () => {
         }
       };
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/mp3' }); // Cambio a MP3
         const audioUrl = URL.createObjectURL(audioBlob);
         setAudioURL(audioUrl);
         audioChunksRef.current = [];
@@ -208,33 +208,33 @@ const Chat = () => {
   };
 
   const sendAudioMessage = async () => {
-    if (!audioURL) return;
+  if (!audioURL) return;
 
-    try {
-      const response = await fetch(audioURL);
-      const audioBlob = await response.blob();
-      const uniqueName = `${Date.now()}.wav`;
-      const fileRef = ref(storage, `audio-messages/${uniqueName}`);
-      await uploadBytes(fileRef, audioBlob);
-      const audioUrl = await getDownloadURL(fileRef);
+  try {
+    const response = await fetch(audioURL);
+    const audioBlob = await response.blob();
+    const uniqueName = `${Date.now()}.mp3`; // Cambio a MP3
+    const fileRef = ref(storage, `audio-messages/${uniqueName}`);
+    await uploadBytes(fileRef, audioBlob);
+    const audioUrl = await getDownloadURL(fileRef);
 
-      const chatId =
-        user.uid < friendUid ? `${user.uid}_${friendUid}` : `${friendUid}_${user.uid}`;
+    const chatId =
+      user.uid < friendUid ? `${user.uid}_${friendUid}` : `${friendUid}_${user.uid}`;
 
-      await addDoc(collection(db, 'chats'), {
-        chatId: chatId,
-        users: [user.uid, friendUid],
-        sender: user.uid,
-        audioUrl: audioUrl,
-        timestamp: new Date(),
-      });
+    await addDoc(collection(db, 'chats'), {
+      chatId: chatId,
+      users: [user.uid, friendUid],
+      sender: user.uid,
+      audioUrl: audioUrl,
+      timestamp: new Date(),
+    });
 
-      setAudioURL('');
-    } catch (error) {
-      console.error('Error sending audio message:', error);
-      alert('Failed to send audio message. Please try again later.');
-    }
-  };
+    setAudioURL('');
+  } catch (error) {
+    console.error('Error sending audio message:', error);
+    alert('Failed to send audio message. Please try again later.');
+  }
+};
 
   const cancelAudioMessage = () => {
     setAudioURL('');
