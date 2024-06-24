@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, db } from '../../firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -12,7 +12,8 @@ import {
   doc,
   updateDoc,
   getDoc,
-  deleteDoc
+  deleteDoc,
+  limit
 } from 'firebase/firestore';
 import { FaUserPlus, FaEnvelope, FaCheck, FaTimes, FaEdit, FaSignOutAlt, FaUsers } from 'react-icons/fa';
 import Snackbar from '@mui/material/Snackbar';
@@ -63,7 +64,7 @@ const Home = () => {
         if (docSnapshot.exists()) {
           const userData = docSnapshot.data();
           const friendList = await Promise.all(
-            (userData.friends || []).map(async (friendUid) => {
+            (userData.friends || []).slice(0, 10).map(async (friendUid) => { // Limit to 10 friends initially
               const friendDoc = await getDoc(doc(db, 'users', friendUid));
               return { uid: friendUid, username: friendDoc.data().username, profilePic: friendDoc.data().profilePic || 'https://st-anns.ca/wp-content/uploads/no-icon.png' };
             })
@@ -74,7 +75,8 @@ const Home = () => {
 
       const chatQuery = query(
         collection(db, 'chats'),
-        where('users', 'array-contains', user.uid)
+        where('users', 'array-contains', user.uid),
+        limit(20) // Limit to 20 chats
       );
 
       const unsubscribeMessages = onSnapshot(chatQuery, (querySnapshot) => {
@@ -109,7 +111,8 @@ const Home = () => {
 
       const groupQuery = query(
         collection(db, 'groups'),
-        where('members', 'array-contains', user.uid)
+        where('members', 'array-contains', user.uid),
+        limit(10) // Limit to 10 groups
       );
 
       const unsubscribeGroups = onSnapshot(groupQuery, (querySnapshot) => {
@@ -133,7 +136,7 @@ const Home = () => {
     console.log('Attempting to add friend with username:', friendUsername);
     if (friendUsername) {
       try {
-        const q = query(collection(db, 'users'), where('username', '==', friendUsername));
+        const q = query(collection(db, 'users'), where('username', '==', friendUsername), limit(1));
         const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
@@ -177,12 +180,11 @@ const Home = () => {
       const updatedUserFriends = [...(userData.friends || []), friendUid];
       const updatedFriendFriends = [...(friendData.friends || []), user.uid];
 
-      await Promise.all([
-        updateDoc(userDocRef, { friends: updatedUserFriends }),
-        updateDoc(friendDocRef, { friends: updatedFriendFriends })
-      ]);
-
-      await deleteDoc(doc(db, 'friendRequests', request.id));
+      const batch = db.batch();
+      batch.update(userDocRef, { friends: updatedUserFriends });
+      batch.update(friendDocRef, { friends: updatedFriendFriends });
+      batch.delete(doc(db, 'friendRequests', request.id));
+      await batch.commit();
 
       alert('Friend request accepted');
     } catch (error) {
@@ -352,3 +354,4 @@ const Home = () => {
 };
 
 export default Home;
+
