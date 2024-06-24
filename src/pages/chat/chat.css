@@ -1,11 +1,21 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: 'Roboto', sans-serif;
+.back-home-button {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  color: #0056b3;
+  z-index: 1100; 
+}
+
+.back-home-button:hover {
+  color: #003366;
 }
 
 .chat-container {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -16,7 +26,6 @@
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   background-color: #f0f2f5;
-  position: relative;
 }
 
 .chat-header {
@@ -149,4 +158,47 @@
   object-fit: contain;
   cursor: pointer;
 }
-  
+
+.modal-content {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  text-align: center;
+}
+
+.modal-content h2 {
+  margin-bottom: 1rem;
+}
+
+.save-button {
+  background-color: #0056b3;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  margin-right: 1rem;
+  cursor: pointer;
+}
+
+.save-button:hover {
+  background-color: #003366;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: #777;
+}
+
+.close-button:hover {
+  color: #333;
+}
+
+.image-modal-overlay {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+

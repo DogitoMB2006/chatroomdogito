@@ -1,0 +1,265 @@
+.modal {
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s ease-in-out;
+    overflow-y: auto;
+    max-height: 100%;
+}
+
+.modal-content {
+    background-color: #222;
+    color: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 600px;
+    width: 100%;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    animation: slideIn 0.4s ease-out;
+    max-height: 90%;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5em;
+    font-weight: 600;
+}
+
+.close-button {
+    background-color: transparent;
+    border: none;
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.close-button:hover {
+    color: #bbb;
+}
+
+.modal-body {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.sidebar button {
+    padding: 10px 15px;
+    background-color: #444;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+    font-size: 1em;
+    font-weight: 500;
+}
+
+.sidebar button:hover {
+    background-color: #666;
+    transform: translateY(-2px);
+}
+
+.sidebar button.active {
+    background-color: #007bff;
+    color: #fff;
+}
+
+.checkboxes {
+    margin-bottom: 15px;
+}
+
+.checkboxes label {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 1em;
+}
+
+.checkboxes input[type="checkbox"] {
+    margin-right: 8px;
+    width: 16px;
+    height: 16px;
+}
+
+.select-user,
+.select-role,
+.select-friend {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #555;
+    background-color: #333;
+    color: #fff;
+    transition: border-color 0.3s;
+}
+
+.select-user:focus,
+.select-role:focus,
+.select-friend:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+.action-button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+    font-size: 1em;
+    font-weight: 500;
+}
+
+.action-button:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+}
+
+.members ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.members li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #444;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.members li:hover {
+    background-color: #555;
+    transform: translateY(-2px);
+}
+
+.members .action-button {
+    background-color: #ff4d4d;
+    padding: 8px 12px;
+}
+
+.members .action-button:hover {
+    background-color: #cc0000;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+    }
+    to {
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    .modal-content {
+        padding: 15px;
+    }
+
+    .sidebar {
+        flex-direction: row;
+        gap: 5px;
+        margin-bottom: 15px;
+    }
+
+    .sidebar button {
+        flex: 1;
+        font-size: 0.9em;
+    }
+
+    .settings,
+    .members {
+        gap: 10px;
+    }
+
+    .select-user,
+    .select-role,
+    .select-friend {
+        padding: 8px;
+    }
+
+    .action-button {
+        padding: 8px 16px;
+        font-size: 0.9em;
+    }
+}
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.modal-footer .action-button {
+    margin-left: 10px;
+}
+
+@media (max-width: 480px) {
+    .modal-content {
+        padding: 15px;
+    }
+    
+    .modal-header h2 {
+        font-size: 1.2em;
+    }
+    
+    .sidebar {
+        flex-direction: row;
+        gap: 5px;
+        margin-bottom: 15px;
+    }
+
+    .sidebar button {
+        flex: 1;
+        font-size: 0.9em;
+    }
+
+    .settings,
+    .members {
+        gap: 10px;
+    }
+
+    .select-user,
+    .select-role,
+    .select-friend {
+        padding: 8px;
+    }
+
+    .action-button {
+        padding: 8px 16px;
+        font-size: 0.9em;
+    }
+}

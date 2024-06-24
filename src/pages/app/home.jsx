@@ -14,26 +14,30 @@ import {
   getDoc,
   deleteDoc
 } from 'firebase/firestore';
-import { FaUserPlus, FaEnvelope, FaCheck, FaTimes, FaEdit, FaSignOutAlt } from 'react-icons/fa';
+import { FaUserPlus, FaEnvelope, FaCheck, FaTimes, FaEdit, FaSignOutAlt, FaUsers } from 'react-icons/fa';
 import Snackbar from '@mui/material/Snackbar';
 import Grow from '@mui/material/Grow';
 import './home.css';
+import Modal from 'react-modal';
+import CreateGroupModal from '../../pages/chat/CreateGroupModal';
 
 const Home = () => {
   const [user, loading] = useAuthState(auth);
   const [friends, setFriends] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [showAddFriend, setShowAddFriend] = useState(false);
   const [friendUsername, setFriendUsername] = useState('');
   const [friendRequests, setFriendRequests] = useState([]);
   const [showRequests, setShowRequests] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [lastLoaded, setLastLoaded] = useState(new Date());
+  const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('chats'); // Estado para controlar la pestaña activa
   const navigate = useNavigate();
-  const [displayName, setDisplayName] = useState(user?.displayName || user?.email); // Estado local para el nombre de usuario
+  const [displayName, setDisplayName] = useState(user?.displayName || user?.email);
 
   useEffect(() => {
     if (user) {
-      // Función para actualizar el nombre de usuario en la página de inicio
       const updateUserDisplayName = async () => {
         const userRef = doc(db, 'users', user.uid);
         const userSnapshot = await getDoc(userRef);
@@ -43,7 +47,7 @@ const Home = () => {
         }
       };
 
-      updateUserDisplayName(); // Llamar a la función al cargar el componente inicialmente
+      updateUserDisplayName();
 
       const reqQuery = query(collection(db, 'friendRequests'), where('to', '==', user.uid));
       const unsubscribeRequests = onSnapshot(reqQuery, (querySnapshot) => {
@@ -103,10 +107,24 @@ const Home = () => {
         });
       });
 
+      const groupQuery = query(
+        collection(db, 'groups'),
+        where('members', 'array-contains', user.uid)
+      );
+
+      const unsubscribeGroups = onSnapshot(groupQuery, (querySnapshot) => {
+        const userGroups = [];
+        querySnapshot.forEach((doc) => {
+          userGroups.push({ id: doc.id, ...doc.data() });
+        });
+        setGroups(userGroups);
+      });
+
       return () => {
         unsubscribeRequests();
         unsubscribeUser();
         unsubscribeMessages();
+        unsubscribeGroups();
       };
     }
   }, [user, lastLoaded]);
@@ -200,6 +218,14 @@ const Home = () => {
     navigate(`/chat/${friendUid}`);
   };
 
+  const openCreateGroupModal = () => {
+    setShowCreateGroupModal(true);
+  };
+
+  const closeCreateGroupModal = () => {
+    setShowCreateGroupModal(false);
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -212,11 +238,12 @@ const Home = () => {
   return (
     <div className="home-container">
       <div className="home-header">
-        <h2>Welcome, {displayName}</h2> {/* Mostrar displayName actualizado dinámicamente */}
+        <h2>Welcome, {displayName}</h2>
         <div className="icons">
           <FaUserPlus onClick={() => setShowAddFriend(!showAddFriend)} />
           <FaEnvelope onClick={() => setShowRequests(!showRequests)} />
           <FaEdit onClick={() => navigate('/profile/edit')} />
+          <FaUsers onClick={openCreateGroupModal} />
           <FaSignOutAlt onClick={handleSignOut} />
         </div>
       </div>
@@ -244,7 +271,7 @@ const Home = () => {
                 <p>{request.fromUsername} wants to be your friend.</p>
                 <div className="friend-request-actions">
                   <FaCheck onClick={() => handleAcceptRequest(request)} />
-                  <FaTimes onClick={() =>                   handleRejectRequest(request)} />
+                  <FaTimes onClick={() => handleRejectRequest(request)} />
                 </div>
               </div>
             ))
@@ -252,17 +279,40 @@ const Home = () => {
         </div>
       )}
 
-      <div className="friend-list">
-        <h3>Friends</h3>
-        {friends.length === 0 ? (
-          <p>You have no friends added.</p>
-        ) : (
-          friends.map((friend) => (
-            <div key={friend.uid} className="friend" onClick={() => handleFriendClick(friend.uid)}>
-              <img src={friend.profilePic} alt={`${friend.username}'s profile`} />
-              <p>{friend.username}</p>
-            </div>
-          ))
+      <div className="tabs">
+        <button className={activeTab === 'chats' ? 'active' : ''} onClick={() => setActiveTab('chats')}>Chats</button>
+        <button className={activeTab === 'groups' ? 'active' : ''} onClick={() => setActiveTab('groups')}>Groups</button>
+      </div>
+
+      <div className="tab-content">
+        {activeTab === 'chats' && (
+          <div className="friend-list">
+            {friends.length === 0 ? (
+              <p>You have no friends added.</p>
+            ) : (
+              friends.map((friend) => (
+                <div key={friend.uid} className="friend" onClick={() => handleFriendClick(friend.uid)}>
+                  <img src={friend.profilePic} alt={`${friend.username}'s profile`} />
+                  <p>{friend.username}</p>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {activeTab === 'groups' && (
+          <div className="group-list">
+            {groups.length === 0 ? (
+              <p>You are not in any groups.</p>
+            ) : (
+              groups.map((group) => (
+                <div key={group.id} className="group" onClick={() => navigate(`/group/${group.id}`)}>
+                  <img src={group.profilePic || 'https://via.placeholder.com/50'} alt={`${group.name} group`} />
+                  <p>{group.name}</p>
+                </div>
+              ))
+            )}
+          </div>
         )}
       </div>
 
@@ -284,9 +334,21 @@ const Home = () => {
           </div>
         </Snackbar>
       ))}
+
+      <Modal
+        isOpen={showCreateGroupModal}
+        onRequestClose={closeCreateGroupModal}
+        contentLabel="Create Group"
+        className="modal"
+        overlayClassName="modal-overlay"
+      >
+        <CreateGroupModal
+          friends={friends}
+          onClose={closeCreateGroupModal}
+        />
+      </Modal>
     </div>
   );
 };
 
 export default Home;
-

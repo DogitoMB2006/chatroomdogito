@@ -3,7 +3,6 @@ body {
   font-family: 'Arial', sans-serif;
   background-color: #2c2f33;
   color: #fff;
-  
 }
 
 .home-container {
@@ -30,7 +29,8 @@ body {
 
 .add-friend,
 .friend-requests,
-.friend-list {
+.friend-list,
+.group-list {
   margin-top: 20px;
   background-color: #23272a;
   padding: 10px;
@@ -58,7 +58,8 @@ body {
 }
 
 .friend-request,
-.friend {
+.friend,
+.group {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -69,7 +70,8 @@ body {
   cursor: pointer;
 }
 
-.friend img {
+.friend img,
+.group img {
   width: 50px;
   height: 50px;
   border-radius: 50%;
@@ -77,7 +79,8 @@ body {
 }
 
 .friend-request p,
-.friend p {
+.friend p,
+.group p {
   margin: 0;
 }
 
@@ -109,6 +112,33 @@ body {
   cursor: pointer;
 }
 
+.tabs {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.tabs button {
+  background-color: #23272a;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  margin: 0 5px;
+  border-radius: 5px 5px 0 0;
+}
+
+.tabs button.active {
+  background-color: #7289da;
+}
+
+.tab-content {
+  background-color: #23272a;
+  padding: 10px;
+  border-radius: 0 5px 5px 5px;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
 @media (max-width: 768px) {
   .home-container {
     padding: 10px;
@@ -129,7 +159,8 @@ body {
     margin-bottom: 10px;
   }
 
-  .friend img {
+  .friend img,
+  .group img {
     width: 40px;
     height: 40px;
   }
@@ -145,7 +176,8 @@ body {
     padding-bottom: 0;
   }
 
-  .friend img {
+  .friend img,
+  .group img {
     width: 30px;
     height: 30px;
   }

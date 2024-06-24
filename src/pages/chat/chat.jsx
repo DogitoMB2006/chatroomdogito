@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { auth, db, storage } from '../../firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import {
@@ -17,16 +17,17 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import './chat.css';
 import Modal from 'react-modal';
 import SettingsIcon from '@material-ui/icons/Settings';
-import MicIcon from '@material-ui/icons/Mic';
-import StopIcon from '@material-ui/icons/Stop';
 import SendIcon from '@material-ui/icons/Send';
 import GalleryIcon from '@material-ui/icons/PhotoLibrary';
 import CancelIcon from '@material-ui/icons/Cancel';
+import ArrowBackIcon from '@material-ui/icons/ArrowBack';
 
 Modal.setAppElement('#root');
 
 const Chat = () => {
   const { friendUid } = useParams();
+  const navigate = useNavigate(); // Hook para navegación
+
   const [user, loading] = useAuthState(auth);
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
@@ -34,12 +35,8 @@ const Chat = () => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [backgroundImage, setBackgroundImage] = useState(null);
   const [newBackgroundImage, setNewBackgroundImage] = useState(null);
-  const [recording, setRecording] = useState(false);
-  const [audioURL, setAudioURL] = useState('');
   const [selectedImage, setSelectedImage] = useState(null);
   const messagesEndRef = useRef(null);
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
 
   useEffect(() => {
     if (user && friendUid) {
@@ -109,14 +106,10 @@ const Chat = () => {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-
     if (message.trim() === '') {
       return;
     }
-
-    const chatId =
-      user.uid < friendUid ? `${user.uid}_${friendUid}` : `${friendUid}_${user.uid}`;
-
+    const chatId = user.uid < friendUid ? `${user.uid}_${friendUid}` : `${friendUid}_${user.uid}`;
     try {
       await addDoc(collection(db, 'chats'), {
         chatId: chatId,
@@ -125,7 +118,6 @@ const Chat = () => {
         message: message.trim(),
         timestamp: new Date(),
       });
-
       setMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
@@ -206,182 +198,69 @@ const Chat = () => {
     setSelectedImage(imageUrl);
   };
 
-  const startRecording = async () => {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      alert('Audio recording is not supported in this browser.');
-      return;
-    }
-  
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
-      audioChunksRef.current = [];
-  
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-  
-      mediaRecorderRef.current.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        const uniqueName = `${Date.now()}_audio.wav`;
-        const fileRef = ref(storage, `audio-messages/${uniqueName}`);
-        const uploadResult = await uploadBytes(fileRef, audioBlob);
-        const audioUrl = await getDownloadURL(uploadResult.ref);
-        setAudioURL(audioUrl);
-      };
-  
-      mediaRecorderRef.current.start();
-      setRecording(true);
-    } catch (error) {
-      console.error('Error starting recording:', error);
-      alert('Failed to start recording. Please try again.');
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-      setRecording(false);
-    }
-  };
-
-  const sendAudioMessage = async () => {
-    if (!audioURL) return;
-
-    const chatId =
-      user.uid < friendUid ? `${user.uid}_${friendUid}` : `${friendUid}_${user.uid}`;
-
-    try {
-      await addDoc(collection(db, 'chats'), {
-        chatId: chatId,
-        users: [user.uid, friendUid],
-        sender: user.uid,
-        audioUrl: audioURL,
-        timestamp: new Date(),
-      });
-
-      setAudioURL('');
-    } catch (error) {
-      console.error('Error sending audio message:', error);
-      alert('Failed to send audio message. Please try again later.');
-    }
-  };
-
-  const cancelAudioMessage = () => {
-    setAudioURL('');
-  };
-
   return (
     <div className="chat-container" style={{ backgroundImage: `url(${backgroundImage})` }}>
       <div className="chat-header">
-        <h3>{friendName}</h3>
-       
-        <button className="settings-button" onClick={openModal}>
-          <SettingsIcon />
+        <button className="icon-button" onClick={() => navigate('/home')}>
+          <ArrowBackIcon />
         </button>
+        <span>{friendName}</span>
+        <button className="settings-button" onClick={openModal}><SettingsIcon /></button>
       </div>
       <div className="chat-messages">
         {messages.map((msg) => (
-          <div key={msg.id} className={`message ${msg.sender === user.uid ? 'sent' : 'received'}`}>
+          <div
+            key={msg.id}
+            className={`message ${msg.sender === user.uid ? 'sent' : 'received'}`}
+          >
             {msg.message && <p>{msg.message}</p>}
             {msg.imageUrl && (
               <img
                 src={msg.imageUrl}
-                alt="Sent Image"
+                alt="Chat Image"
                 onClick={() => handleImageClick(msg.imageUrl)}
               />
             )}
-            {msg.audioUrl && (
-              <audio controls>
-                <source src={msg.audioUrl} type="audio/wav" />
-                Your browser does not support the audio element.
-              </audio>
-            )}
+            <span>{msg.sender === user.uid ? 'You' : friendName}</span>
+            <span>{new Date(msg.timestamp?.toDate()).toLocaleString()}</span>
           </div>
         ))}
         <div ref={messagesEndRef} />
       </div>
       <form onSubmit={handleSendMessage} className="message-input">
-        {audioURL ? (
-          <div className="audio-preview">
-            <audio controls>
-              <source src={audioURL} type="audio/wav" />
-              Your browser does not support the audio element.
-            </audio>
-            <button type="button" className="icon-button" onClick={cancelAudioMessage}>
-              <CancelIcon />
-            </button>
-            <button type="button" className="icon-button" onClick={sendAudioMessage}>
-              <SendIcon />
-            </button>
-          </div>
-        ) : (
-          <>
-            <input
-              type="text"
-              placeholder="Type a message..."
-              value={message}
-              onChange={handleChangeMessage}
-            />
-            <div className="icons">
-              <label htmlFor="image-upload" className="icon-button">
-                <GalleryIcon />
-                <input
-                  id="image-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  style={{ display: 'none' }}
-                />
-              </label>
-              {recording ? (
-                <button type="button" className="icon-button" onClick={stopRecording}>
-                  <StopIcon />
-                </button>
-              ) : (
-                <button type="button" className="icon-button" onClick={startRecording}>
-                  <MicIcon />
-                </button>
-              )}
-              <button type="submit" className="icon-button">
-                <SendIcon />
-              </button>
-            </div>
-          </>
-        )}
+        <input
+          type="text"
+          placeholder="Type a message..."
+          value={message}
+          onChange={handleChangeMessage}
+        />
+        <div className="icons">
+          <button className="icon-button" onClick={openModal}>
+            <GalleryIcon />
+          </button>
+          <button type="submit" className="icon-button">
+            <SendIcon />
+          </button>
+        </div>
       </form>
       <Modal
         isOpen={modalIsOpen}
         onRequestClose={closeModal}
-        contentLabel="Settings Modal"
-        className="modal"
-        overlayClassName="overlay"
+        contentLabel="Chat Settings"
+        className="image-modal"
+        overlayClassName="image-modal-overlay"
       >
-        <h2>Chat Settings</h2>
-        <label htmlFor="background-upload" className="modal-button">
-          Change Background
-          <input
-            id="background-upload"
-            type="file"
-            accept="image/*"
-            onChange={changeBackground}
-            style={{ display: 'none' }}
-          />
-        </label>
-        <button className="modal-button" onClick={saveChanges}>
-          Save Changes
-        </button>
-        <button className="modal-button" onClick={closeModal}>
-          Close
-        </button>
-      </Modal>
-      {selectedImage && (
-        <div className="image-modal" onClick={() => setSelectedImage(null)}>
-          <img src={selectedImage} alt="Selected" />
+        <div className="modal-content">
+          <h2>Change Background Image</h2>
+          <input type="file" onChange={changeBackground} />
+          <button onClick={saveChanges} className="save-button">
+            Save Changes
+          </button>
+          <button onClick={closeModal} className="close-button">
+            Close
+          </button>
         </div>
-      )}
+      </Modal>
     </div>
   );
 };
